@@ -2,7 +2,23 @@ spring:
   application:
     name: eventhub-api
   datasource:
-    url: jdbc:postgresql://localhost:15432/eventhub-api-db
-    username: postgres
-    password: postgres
-    driver-class-name: org.postgresql.Driver
+    url: ${DB_URL:jdbc:postgresql://localhost:15432/eventhub-api-db}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: ${DB_DRIVER_CLASS_NAME:org.postgresql.Driver}
+  lifecycle:
+    timeout-per-shutdown-phase: ${SHUTDOWN_TIMEOUT_PER_PHASE:30s}
+
+server:
+  shutdown: graceful
+
+logging:
+  level:
+    root: ${LOG_LEVEL_ROOT:INFO}
+  structured:
+    format:
+      console: ${LOG_CONSOLE_FORMAT:logstash}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html

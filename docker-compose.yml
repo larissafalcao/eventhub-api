@@ -1,7 +1,7 @@
 version: '3.3'
 
 services:
-  postgres-blackjack:
+  postgres-eventhub:
     image: postgres
     restart: always
     environment:
