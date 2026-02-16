@@ -20,7 +20,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/events")
-public class EventController {
+public class EventController implements EventControllerDocs {
 
     private final EventService eventService;
 
@@ -29,24 +29,28 @@ public class EventController {
     }
 
     @PostMapping
+    @Override
     public ResponseEntity<EventResponse> create(@Valid @RequestBody CreateEventRequest request) {
         EventResponse response = eventService.createEvent(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @GetMapping
+    @Override
     public ResponseEntity<List<EventResponse>> list() {
         List<EventResponse> events = eventService.listEvents();
         return ResponseEntity.ok(events);
     }
 
     @GetMapping("/{id}")
+    @Override
     public ResponseEntity<EventResponse> getById(@PathVariable Long id) {
         EventResponse response = eventService.getEventById(id);
         return ResponseEntity.ok(response);
     }
 
     @PutMapping("/{id}")
+    @Override
     public ResponseEntity<EventResponse> update(
             @PathVariable Long id,
             @Valid @RequestBody UpdateEventRequest request) {
@@ -55,6 +59,7 @@ public class EventController {
     }
 
     @DeleteMapping("/{id}")
+    @Override
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         eventService.deleteEvent(id);
         return ResponseEntity.noContent().build();
