@@ -1,0 +1,11 @@
+version: '3.3'
+
+services:
+  postgres-blackjack:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_DB: "eventhub-api-db"
+      POSTGRES_PASSWORD: "postgres"
+    ports:
+      - "15432:5432"
