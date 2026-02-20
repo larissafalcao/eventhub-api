@@ -62,7 +62,6 @@ class TicketServiceTest {
 
         when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
         when(participantRepository.findById(participantId)).thenReturn(Optional.of(participant));
-        when(ticketRepository.countByEventId(eventId)).thenReturn(99L);
         when(ticketRepository.save(any(Ticket.class))).thenAnswer(invocation -> {
             Ticket ticket = invocation.getArgument(0);
             ticket.setId(123L);
@@ -75,7 +74,9 @@ class TicketServiceTest {
         assertThat(response.getEventId()).isEqualTo(eventId);
         assertThat(response.getParticipantId()).isEqualTo(participantId);
         assertThat(response.getPurchasedAt()).isNotNull();
+        assertThat(event.getCapacity()).isEqualTo(99);
         verify(ticketRepository).save(any(Ticket.class));
+        verify(eventRepository).save(event);
     }
 
     @Test
@@ -119,7 +120,7 @@ class TicketServiceTest {
     void purchaseTicketThrowsWhenEventIsFull() {
         Long eventId = 1L;
         Long participantId = 10L;
-        Event event = createEvent(eventId, 100);
+        Event event = createEvent(eventId, 0);
         Participant participant = createParticipant(participantId, "Alice", "alice@email.com");
         PurchaseTicketRequest request = PurchaseTicketRequest.builder()
                 .participantId(participantId)
@@ -127,7 +128,6 @@ class TicketServiceTest {
 
         when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
         when(participantRepository.findById(participantId)).thenReturn(Optional.of(participant));
-        when(ticketRepository.countByEventId(eventId)).thenReturn(100L);
 
         assertThatThrownBy(() -> ticketService.purchaseTicket(eventId, request))
                 .isInstanceOf(EventFullException.class)

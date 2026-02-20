@@ -44,8 +44,7 @@ public class TicketService {
         Event event = findEventById(eventId);
         Participant participant = findParticipantById(request.getParticipantId());
 
-        long soldTickets = ticketRepository.countByEventId(eventId);
-        if (soldTickets >= event.getCapacity()) {
+        if (event.getCapacity() <= 0) {
             throw new EventFullException(eventId);
         }
 
@@ -55,6 +54,8 @@ public class TicketService {
                 .purchasedAt(Instant.now())
                 .build();
         Ticket savedTicket = ticketRepository.save(ticket);
+        event.setCapacity(event.getCapacity() - 1);
+        eventRepository.save(event);
 
         return ticketMapper.toResponse(savedTicket);
     }
