@@ -13,8 +13,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -64,8 +67,8 @@ class EventServiceTest {
     }
 
     @Test
-    @DisplayName("listEvents: returns all events")
-    void listEventsReturnsAllEvents() {
+    @DisplayName("listEvents: returns paginated events")
+    void listEventsReturnsPaginatedEvents() {
         Event event = Event.builder()
                 .id(1L)
                 .name("Meetup")
@@ -73,13 +76,15 @@ class EventServiceTest {
                 .location("Office")
                 .capacity(50)
                 .build();
-        when(eventRepository.findAll()).thenReturn(List.of(event));
+        Pageable pageable = PageRequest.of(0, 20);
+        Page<Event> page = new PageImpl<>(List.of(event), pageable, 1);
+        when(eventRepository.findAll(pageable)).thenReturn(page);
 
-        List<EventResponse> result = eventService.listEvents();
+        Page<EventResponse> result = eventService.listEvents(pageable);
 
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).getName()).isEqualTo("Meetup");
-        verify(eventRepository).findAll();
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getName()).isEqualTo("Meetup");
+        verify(eventRepository).findAll(pageable);
     }
 
     @Test
@@ -114,8 +119,8 @@ class EventServiceTest {
     }
 
     @Test
-    @DisplayName("updateEvent: updates event and returns response")
-    void updateEventUpdatesEventAndReturnsResponse() {
+    @DisplayName("updateEvent: updates existing entity fields and returns response")
+    void updateEventUpdatesExistingEntityAndReturnsResponse() {
         Long id = 1L;
         Event existing = Event.builder()
                 .id(id)
@@ -131,16 +136,14 @@ class EventServiceTest {
                 .capacity(20)
                 .build();
         when(eventRepository.findById(id)).thenReturn(Optional.of(existing));
-        when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(eventRepository.save(existing)).thenReturn(existing);
 
         EventResponse response = eventService.updateEvent(id, request);
-        ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
 
         assertThat(response.getName()).isEqualTo("New Name");
         assertThat(response.getCapacity()).isEqualTo(20);
-        verify(eventRepository).save(eventCaptor.capture());
-        assertThat(eventCaptor.getValue().getId()).isEqualTo(id);
-        assertThat(eventCaptor.getValue().getName()).isEqualTo("New Name");
+        assertThat(existing.getName()).isEqualTo("New Name");
+        verify(eventRepository).save(existing);
     }
 
     @Test

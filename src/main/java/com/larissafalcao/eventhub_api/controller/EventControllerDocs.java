@@ -6,14 +6,13 @@ import com.larissafalcao.eventhub_api.dto.response.EventResponse;
 import com.larissafalcao.eventhub_api.exception.ErrorResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
-
-import java.util.List;
 
 @Tag(name = "Events", description = "Endpoints for event management")
 public interface EventControllerDocs {
@@ -25,10 +24,9 @@ public interface EventControllerDocs {
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     ResponseEntity<EventResponse> create(CreateEventRequest request);
 
-    @Operation(summary = "List events", description = "Returns all events")
-    @ApiResponse(responseCode = "200", description = "Events returned successfully",
-            content = @Content(array = @ArraySchema(schema = @Schema(implementation = EventResponse.class))))
-    ResponseEntity<List<EventResponse>> list();
+    @Operation(summary = "List events", description = "Returns a paginated list of events")
+    @ApiResponse(responseCode = "200", description = "Events returned successfully")
+    ResponseEntity<Page<EventResponse>> list(Pageable pageable);
 
     @Operation(summary = "Get event by id", description = "Returns event details by id")
     @ApiResponse(responseCode = "200", description = "Event found",

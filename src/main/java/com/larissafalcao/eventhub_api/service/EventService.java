@@ -7,10 +7,10 @@ import com.larissafalcao.eventhub_api.entity.Event;
 import com.larissafalcao.eventhub_api.exception.ResourceNotFoundException;
 import com.larissafalcao.eventhub_api.mapper.EventMapper;
 import com.larissafalcao.eventhub_api.repository.EventRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 public class EventService {
@@ -32,12 +32,13 @@ public class EventService {
         return eventMapper.toResponse(saved);
     }
 
-    public List<EventResponse> listEvents() {
-        return eventRepository.findAll().stream()
-                .map(eventMapper::toResponse)
-                .toList();
+    @Transactional(readOnly = true)
+    public Page<EventResponse> listEvents(Pageable pageable) {
+        return eventRepository.findAll(pageable)
+                .map(eventMapper::toResponse);
     }
 
+    @Transactional(readOnly = true)
     public EventResponse getEventById(Long id) {
         Event event = findEventById(id);
         return eventMapper.toResponse(event);
@@ -46,8 +47,8 @@ public class EventService {
     @Transactional
     public EventResponse updateEvent(Long id, UpdateEventRequest request) {
         Event existingEvent = findEventById(id);
-        Event updatedEvent = eventMapper.toUpdatedEntity(existingEvent, request);
-        Event updated = eventRepository.save(updatedEvent);
+        eventMapper.updateEntity(existingEvent, request);
+        Event updated = eventRepository.save(existingEvent);
         return eventMapper.toResponse(updated);
     }
 

@@ -11,11 +11,15 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
@@ -57,7 +61,7 @@ class EventControllerTest {
 
         mockMvc.perform(post("/events")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(createEventJson("Concert", FUTURE_DATE.toString(), "Arena", 1000)))
+                        .content(eventJson("Concert", FUTURE_DATE.toString(), "Arena", 1000)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id", is(1)))
                 .andExpect(jsonPath("$.name", is("Concert")));
@@ -69,7 +73,7 @@ class EventControllerTest {
     void postEventsReturns400WhenNameBlank() throws Exception {
         mockMvc.perform(post("/events")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(createEventJson("", FUTURE_DATE.toString(), "Arena", 100)))
+                        .content(eventJson("", FUTURE_DATE.toString(), "Arena", 100)))
                 .andExpect(status().isBadRequest());
     }
 
@@ -78,13 +82,13 @@ class EventControllerTest {
     void postEventsReturns400WhenDateInPast() throws Exception {
         mockMvc.perform(post("/events")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(createEventJson("Concert", LocalDate.now().minusDays(1).toString(), "Arena", 100)))
+                        .content(eventJson("Concert", LocalDate.now().minusDays(1).toString(), "Arena", 100)))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
-    @DisplayName("returns 200 and list of events")
-    void getEventsReturns200AndList() throws Exception {
+    @DisplayName("returns 200 and paginated list of events")
+    void getEventsReturns200AndPaginatedList() throws Exception {
         EventResponse event = EventResponse.builder()
                 .id(1L)
                 .name("Meetup")
@@ -92,12 +96,13 @@ class EventControllerTest {
                 .location("Office")
                 .capacity(50)
                 .build();
-        when(eventService.listEvents()).thenReturn(java.util.List.of(event));
+        Page<EventResponse> page = new PageImpl<>(List.of(event));
+        when(eventService.listEvents(any(Pageable.class))).thenReturn(page);
 
         mockMvc.perform(get("/events"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].name", is("Meetup")));
+                .andExpect(jsonPath("$.content", hasSize(1)))
+                .andExpect(jsonPath("$.content[0].name", is("Meetup")));
     }
 
     @Test
@@ -145,7 +150,7 @@ class EventControllerTest {
 
         mockMvc.perform(put("/events/{id}", id)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(updateEventJson("Updated", FUTURE_DATE.toString(), "New Place", 200)))
+                        .content(eventJson("Updated", FUTURE_DATE.toString(), "New Place", 200)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name", is("Updated")));
         verify(eventService).updateEvent(eq(id), any(UpdateEventRequest.class));
@@ -156,7 +161,7 @@ class EventControllerTest {
     void putEventsByIdReturns400WhenNameBlank() throws Exception {
         mockMvc.perform(put("/events/1")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(updateEventJson("", FUTURE_DATE.toString(), "Arena", 100)))
+                        .content(eventJson("", FUTURE_DATE.toString(), "Arena", 100)))
                 .andExpect(status().isBadRequest());
     }
 
@@ -169,7 +174,7 @@ class EventControllerTest {
 
         mockMvc.perform(put("/events/{id}", id)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(updateEventJson("Name", FUTURE_DATE.toString(), "Place", 10)))
+                        .content(eventJson("Name", FUTURE_DATE.toString(), "Place", 10)))
                 .andExpect(status().isNotFound());
     }
 
@@ -195,18 +200,7 @@ class EventControllerTest {
                 .andExpect(status().isNotFound());
     }
 
-    private static String createEventJson(String name, String date, String location, Integer capacity) {
-        return """
-                {
-                  "name": "%s",
-                  "date": "%s",
-                  "location": "%s",
-                  "capacity": %d
-                }
-                """.formatted(name, date, location, capacity);
-    }
-
-    private static String updateEventJson(String name, String date, String location, Integer capacity) {
+    private static String eventJson(String name, String date, String location, Integer capacity) {
         return """
                 {
                   "name": "%s",

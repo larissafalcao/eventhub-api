@@ -18,14 +18,11 @@ public class EventMapper {
                 .build();
     }
 
-    public Event toUpdatedEntity(Event existingEvent, UpdateEventRequest request) {
-        return Event.builder()
-                .id(existingEvent.getId())
-                .name(request.getName())
-                .date(request.getDate())
-                .location(request.getLocation())
-                .capacity(request.getCapacity())
-                .build();
+    public void updateEntity(Event existingEvent, UpdateEventRequest request) {
+        existingEvent.setName(request.getName());
+        existingEvent.setDate(request.getDate());
+        existingEvent.setLocation(request.getLocation());
+        existingEvent.setCapacity(request.getCapacity());
     }
 
     public EventResponse toResponse(Event event) {
