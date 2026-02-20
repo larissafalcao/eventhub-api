@@ -24,7 +24,7 @@ public interface TicketControllerDocs {
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     @ApiResponse(responseCode = "404", description = "Event or participant not found",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
-    @ApiResponse(responseCode = "409", description = "Event capacity reached",
+    @ApiResponse(responseCode = "409", description = "Event capacity reached or duplicate ticket",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     ResponseEntity<TicketResponse> purchaseTicket(
             @Parameter(description = "Event id", example = "1") Long eventId,

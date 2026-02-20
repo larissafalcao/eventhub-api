@@ -2,6 +2,7 @@ package com.larissafalcao.eventhub_api.controller;
 
 import com.larissafalcao.eventhub_api.dto.request.PurchaseTicketRequest;
 import com.larissafalcao.eventhub_api.dto.response.TicketResponse;
+import com.larissafalcao.eventhub_api.exception.DuplicateTicketException;
 import com.larissafalcao.eventhub_api.exception.EventFullException;
 import com.larissafalcao.eventhub_api.exception.GlobalExceptionHandler;
 import com.larissafalcao.eventhub_api.exception.ResourceNotFoundException;
@@ -102,6 +103,20 @@ class TicketControllerTest {
                         .content(purchaseTicketJson(10L)))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code", is("EVENT_FULL")));
+    }
+
+    @Test
+    @DisplayName("returns 409 when ticket is duplicate")
+    void postTicketPurchaseReturns409WhenDuplicate() throws Exception {
+        Long eventId = 1L;
+        when(ticketService.purchaseTicket(eq(eventId), any(PurchaseTicketRequest.class)))
+                .thenThrow(new DuplicateTicketException(eventId, 10L));
+
+        mockMvc.perform(post("/events/{eventId}/tickets", eventId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(purchaseTicketJson(10L)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code", is("DUPLICATE_TICKET")));
     }
 
     @Test

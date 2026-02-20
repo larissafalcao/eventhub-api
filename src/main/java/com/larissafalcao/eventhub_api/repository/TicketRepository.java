@@ -9,5 +9,7 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
 
     long countByEventId(Long eventId);
 
+    boolean existsByEventIdAndParticipantId(Long eventId, Long participantId);
+
     List<Ticket> findByParticipantIdOrderByPurchasedAtDesc(Long participantId);
 }

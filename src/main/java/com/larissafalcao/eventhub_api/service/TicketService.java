@@ -5,6 +5,7 @@ import com.larissafalcao.eventhub_api.dto.response.TicketResponse;
 import com.larissafalcao.eventhub_api.entity.Event;
 import com.larissafalcao.eventhub_api.entity.Participant;
 import com.larissafalcao.eventhub_api.entity.Ticket;
+import com.larissafalcao.eventhub_api.exception.DuplicateTicketException;
 import com.larissafalcao.eventhub_api.exception.EventFullException;
 import com.larissafalcao.eventhub_api.exception.ResourceNotFoundException;
 import com.larissafalcao.eventhub_api.mapper.TicketMapper;
@@ -42,10 +43,15 @@ public class TicketService {
     @Transactional
     public TicketResponse purchaseTicket(Long eventId, PurchaseTicketRequest request) {
         Event event = findEventById(eventId);
-        Participant participant = findParticipantById(request.getParticipantId());
 
         if (event.getCapacity() <= 0) {
             throw new EventFullException(eventId);
+        }
+
+        Participant participant = findParticipantById(request.getParticipantId());
+
+        if (ticketRepository.existsByEventIdAndParticipantId(eventId, participant.getId())) {
+            throw new DuplicateTicketException(eventId, participant.getId());
         }
 
         Ticket ticket = Ticket.builder()
@@ -60,6 +66,7 @@ public class TicketService {
         return ticketMapper.toResponse(savedTicket);
     }
 
+    @Transactional(readOnly = true)
     public List<TicketResponse> listTicketsByParticipant(Long participantId) {
         Participant participant = findParticipantById(participantId);
         return ticketRepository.findByParticipantIdOrderByPurchasedAtDesc(participant.getId()).stream()
