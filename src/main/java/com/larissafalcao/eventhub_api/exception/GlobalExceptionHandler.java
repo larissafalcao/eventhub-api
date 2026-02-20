@@ -3,6 +3,7 @@ package com.larissafalcao.eventhub_api.exception;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -47,6 +48,13 @@ public class GlobalExceptionHandler {
                 .map(error -> error.getField() + ": " + error.getDefaultMessage())
                 .toList();
         ErrorResponse response = ErrorResponse.of(VALIDATION_ERROR, "Validation failed", errors);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
+    @ExceptionHandler(InvalidDataAccessApiUsageException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidDataAccessApiUsage(InvalidDataAccessApiUsageException ex) {
+        log.warn("Invalid data access usage: {}", ex.getMessage());
+        ErrorResponse response = ErrorResponse.of(VALIDATION_ERROR, "Invalid query parameter");
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 

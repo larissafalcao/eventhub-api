@@ -5,6 +5,7 @@ import com.larissafalcao.eventhub_api.dto.request.UpdateEventRequest;
 import com.larissafalcao.eventhub_api.dto.response.EventResponse;
 import com.larissafalcao.eventhub_api.service.EventService;
 import jakarta.validation.Valid;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -37,7 +38,7 @@ public class EventController implements EventControllerDocs {
 
     @GetMapping
     @Override
-    public ResponseEntity<Page<EventResponse>> list(Pageable pageable) {
+    public ResponseEntity<Page<EventResponse>> list(@ParameterObject Pageable pageable) {
         Page<EventResponse> events = eventService.listEvents(pageable);
         return ResponseEntity.ok(events);
     }
