@@ -14,7 +14,6 @@ import lombok.Setter;
 
 import java.time.LocalDate;
 
-@Setter
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
@@ -25,15 +24,19 @@ public class Event {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Setter
     @Column(nullable = false)
     private String name;
 
+    @Setter
     @Column(nullable = false)
     private LocalDate date;
 
+    @Setter
     @Column(nullable = false)
     private String location;
 
+    @Setter
     @Column(nullable = false)
     private Integer capacity;
 
