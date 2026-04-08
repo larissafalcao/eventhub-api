@@ -1,5 +1,6 @@
 package com.larissafalcao.eventhub_api.service;
 
+import com.larissafalcao.eventhub_api.config.CacheConfig;
 import com.larissafalcao.eventhub_api.dto.request.CreateEventRequest;
 import com.larissafalcao.eventhub_api.dto.request.UpdateEventRequest;
 import com.larissafalcao.eventhub_api.dto.response.EventResponse;
@@ -7,6 +8,8 @@ import com.larissafalcao.eventhub_api.entity.Event;
 import com.larissafalcao.eventhub_api.exception.ResourceNotFoundException;
 import com.larissafalcao.eventhub_api.mapper.EventMapper;
 import com.larissafalcao.eventhub_api.repository.EventRepository;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -25,6 +28,7 @@ public class EventService {
         this.eventMapper = eventMapper;
     }
 
+    @CacheEvict(cacheNames = CacheConfig.EVENTS_CACHE_NAME, allEntries = true)
     @Transactional
     public EventResponse createEvent(CreateEventRequest request) {
         Event event = eventMapper.toEntity(request);
@@ -32,6 +36,9 @@ public class EventService {
         return eventMapper.toResponse(saved);
     }
 
+    @Cacheable(
+            cacheNames = CacheConfig.EVENTS_CACHE_NAME,
+            key = "#pageable.pageNumber + '-' + #pageable.pageSize + '-' + #pageable.sort.toString()")
     @Transactional(readOnly = true)
     public Page<EventResponse> listEvents(Pageable pageable) {
         return eventRepository.findAll(pageable)
@@ -44,6 +51,7 @@ public class EventService {
         return eventMapper.toResponse(event);
     }
 
+    @CacheEvict(cacheNames = CacheConfig.EVENTS_CACHE_NAME, allEntries = true)
     @Transactional
     public EventResponse updateEvent(Long id, UpdateEventRequest request) {
         Event existingEvent = findEventById(id);
@@ -52,6 +60,7 @@ public class EventService {
         return eventMapper.toResponse(updated);
     }
 
+    @CacheEvict(cacheNames = CacheConfig.EVENTS_CACHE_NAME, allEntries = true)
     @Transactional
     public void deleteEvent(Long id) {
         Event event = findEventById(id);

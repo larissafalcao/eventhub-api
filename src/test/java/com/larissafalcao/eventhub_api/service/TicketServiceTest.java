@@ -5,6 +5,7 @@ import com.larissafalcao.eventhub_api.dto.response.TicketResponse;
 import com.larissafalcao.eventhub_api.entity.Event;
 import com.larissafalcao.eventhub_api.entity.Participant;
 import com.larissafalcao.eventhub_api.entity.Ticket;
+import com.larissafalcao.eventhub_api.event.TicketPurchasedEvent;
 import com.larissafalcao.eventhub_api.exception.DuplicateTicketException;
 import com.larissafalcao.eventhub_api.exception.EventFullException;
 import com.larissafalcao.eventhub_api.exception.ResourceNotFoundException;
@@ -19,6 +20,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -44,6 +46,9 @@ class TicketServiceTest {
     @Mock
     private TicketRepository ticketRepository;
 
+    @Mock
+    private ApplicationEventPublisher applicationEventPublisher;
+
     @Spy
     private TicketMapper ticketMapper = new TicketMapper();
 
@@ -63,7 +68,7 @@ class TicketServiceTest {
                 .participantId(participantId)
                 .build();
 
-        when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
+        when(eventRepository.findByIdForUpdate(eventId)).thenReturn(Optional.of(event));
         when(participantRepository.findById(participantId)).thenReturn(Optional.of(participant));
         when(ticketRepository.existsByEventIdAndParticipantId(eventId, participantId)).thenReturn(false);
         when(ticketRepository.save(any(Ticket.class))).thenAnswer(invocation -> {
@@ -85,6 +90,7 @@ class TicketServiceTest {
         assertThat(event.getCapacity()).isEqualTo(99);
         verify(ticketRepository).save(any(Ticket.class));
         verify(eventRepository).save(event);
+        verify(applicationEventPublisher).publishEvent(any(TicketPurchasedEvent.class));
     }
 
     @Test
@@ -96,7 +102,7 @@ class TicketServiceTest {
                 .participantId(10L)
                 .build();
 
-        when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
+        when(eventRepository.findByIdForUpdate(eventId)).thenReturn(Optional.of(event));
 
         assertThatThrownBy(() -> ticketService.purchaseTicket(eventId, request))
                 .isInstanceOf(EventFullException.class)
@@ -104,6 +110,7 @@ class TicketServiceTest {
 
         verify(participantRepository, never()).findById(any());
         verify(ticketRepository, never()).save(any(Ticket.class));
+        verify(applicationEventPublisher, never()).publishEvent(any());
     }
 
     @Test
@@ -113,13 +120,14 @@ class TicketServiceTest {
         PurchaseTicketRequest request = PurchaseTicketRequest.builder()
                 .participantId(1L)
                 .build();
-        when(eventRepository.findById(eventId)).thenReturn(Optional.empty());
+        when(eventRepository.findByIdForUpdate(eventId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> ticketService.purchaseTicket(eventId, request))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage("Event not found with id: 999");
 
         verify(ticketRepository, never()).save(any(Ticket.class));
+        verify(applicationEventPublisher, never()).publishEvent(any());
     }
 
     @Test
@@ -132,7 +140,7 @@ class TicketServiceTest {
                 .participantId(participantId)
                 .build();
 
-        when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
+        when(eventRepository.findByIdForUpdate(eventId)).thenReturn(Optional.of(event));
         when(participantRepository.findById(participantId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> ticketService.purchaseTicket(eventId, request))
@@ -140,6 +148,7 @@ class TicketServiceTest {
                 .hasMessage("Participant not found with id: 999");
 
         verify(ticketRepository, never()).save(any(Ticket.class));
+        verify(applicationEventPublisher, never()).publishEvent(any());
     }
 
     @Test
@@ -153,7 +162,7 @@ class TicketServiceTest {
                 .participantId(participantId)
                 .build();
 
-        when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
+        when(eventRepository.findByIdForUpdate(eventId)).thenReturn(Optional.of(event));
         when(participantRepository.findById(participantId)).thenReturn(Optional.of(participant));
         when(ticketRepository.existsByEventIdAndParticipantId(eventId, participantId)).thenReturn(true);
 
@@ -162,6 +171,7 @@ class TicketServiceTest {
                 .hasMessage("Participant 10 already has a ticket for event 1");
 
         verify(ticketRepository, never()).save(any(Ticket.class));
+        verify(applicationEventPublisher, never()).publishEvent(any());
     }
 
     @Test

@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
+import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -22,6 +23,7 @@ public class GlobalExceptionHandler {
     private static final String EVENT_FULL = "EVENT_FULL";
     private static final String DUPLICATE_TICKET = "DUPLICATE_TICKET";
     private static final String DATA_INTEGRITY_VIOLATION = "DATA_INTEGRITY_VIOLATION";
+    private static final String LOCK_ACQUISITION_FAILURE = "LOCK_ACQUISITION_FAILURE";
     private static final String INTERNAL_ERROR = "INTERNAL_ERROR";
 
     @ExceptionHandler(ResourceNotFoundException.class)
@@ -63,6 +65,14 @@ public class GlobalExceptionHandler {
         log.warn("Data integrity violation: {}", ex.getMessage());
         ErrorResponse response = ErrorResponse.of(DATA_INTEGRITY_VIOLATION,
                 "Operation violates data integrity constraints");
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+    }
+
+    @ExceptionHandler(PessimisticLockingFailureException.class)
+    public ResponseEntity<ErrorResponse> handlePessimisticLockingFailure(PessimisticLockingFailureException ex) {
+        log.warn("Pessimistic locking failure: {}", ex.getMessage());
+        ErrorResponse response = ErrorResponse.of(LOCK_ACQUISITION_FAILURE,
+                "Could not acquire the lock required to complete the operation");
         return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
     }
 

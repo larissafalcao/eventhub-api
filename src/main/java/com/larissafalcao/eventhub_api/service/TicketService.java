@@ -5,6 +5,7 @@ import com.larissafalcao.eventhub_api.dto.response.TicketResponse;
 import com.larissafalcao.eventhub_api.entity.Event;
 import com.larissafalcao.eventhub_api.entity.Participant;
 import com.larissafalcao.eventhub_api.entity.Ticket;
+import com.larissafalcao.eventhub_api.event.TicketPurchasedEvent;
 import com.larissafalcao.eventhub_api.exception.DuplicateTicketException;
 import com.larissafalcao.eventhub_api.exception.EventFullException;
 import com.larissafalcao.eventhub_api.exception.ResourceNotFoundException;
@@ -12,6 +13,7 @@ import com.larissafalcao.eventhub_api.mapper.TicketMapper;
 import com.larissafalcao.eventhub_api.repository.EventRepository;
 import com.larissafalcao.eventhub_api.repository.ParticipantRepository;
 import com.larissafalcao.eventhub_api.repository.TicketRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,21 +30,24 @@ public class TicketService {
     private final ParticipantRepository participantRepository;
     private final TicketRepository ticketRepository;
     private final TicketMapper ticketMapper;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     public TicketService(
             EventRepository eventRepository,
             ParticipantRepository participantRepository,
             TicketRepository ticketRepository,
-            TicketMapper ticketMapper) {
+            TicketMapper ticketMapper,
+            ApplicationEventPublisher applicationEventPublisher) {
         this.eventRepository = eventRepository;
         this.participantRepository = participantRepository;
         this.ticketRepository = ticketRepository;
         this.ticketMapper = ticketMapper;
+        this.applicationEventPublisher = applicationEventPublisher;
     }
 
     @Transactional
     public TicketResponse purchaseTicket(Long eventId, PurchaseTicketRequest request) {
-        Event event = findEventById(eventId);
+        Event event = findEventByIdForUpdate(eventId);
 
         if (event.getCapacity() <= 0) {
             throw new EventFullException(eventId);
@@ -62,6 +67,12 @@ public class TicketService {
         Ticket savedTicket = ticketRepository.save(ticket);
         event.setCapacity(event.getCapacity() - 1);
         eventRepository.save(event);
+        applicationEventPublisher.publishEvent(new TicketPurchasedEvent(
+                savedTicket.getId(),
+                participant.getName(),
+                participant.getEmail(),
+                event.getName(),
+                savedTicket.getPurchasedAt()));
 
         return ticketMapper.toResponse(savedTicket);
     }
@@ -74,8 +85,8 @@ public class TicketService {
                 .toList();
     }
 
-    private Event findEventById(Long eventId) {
-        return eventRepository.findById(eventId)
+    private Event findEventByIdForUpdate(Long eventId) {
+        return eventRepository.findByIdForUpdate(eventId)
                 .orElseThrow(() -> new ResourceNotFoundException(String.format(EVENT_NOT_FOUND, eventId)));
     }
 
