@@ -3,6 +3,7 @@ package com.larissafalcao.eventhub_api.controller;
 import com.larissafalcao.eventhub_api.dto.request.CreateEventRequest;
 import com.larissafalcao.eventhub_api.dto.request.UpdateEventRequest;
 import com.larissafalcao.eventhub_api.dto.response.EventResponse;
+import com.larissafalcao.eventhub_api.dto.response.RestPage;
 import com.larissafalcao.eventhub_api.exception.GlobalExceptionHandler;
 import com.larissafalcao.eventhub_api.exception.ResourceNotFoundException;
 import com.larissafalcao.eventhub_api.security.JwtService;
@@ -13,8 +14,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
@@ -106,7 +105,7 @@ class EventControllerTest {
                 .location("Office")
                 .capacity(50)
                 .build();
-        Page<EventResponse> page = new PageImpl<>(List.of(event));
+        RestPage<EventResponse> page = new RestPage<>(List.of(event), 0, 20, 1);
         when(eventService.listEvents(any(Pageable.class))).thenReturn(page);
 
         mockMvc.perform(get("/events"))
