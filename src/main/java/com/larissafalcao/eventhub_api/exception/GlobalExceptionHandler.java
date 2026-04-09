@@ -7,6 +7,8 @@ import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -22,8 +24,11 @@ public class GlobalExceptionHandler {
     private static final String RESOURCE_NOT_FOUND = "RESOURCE_NOT_FOUND";
     private static final String EVENT_FULL = "EVENT_FULL";
     private static final String DUPLICATE_TICKET = "DUPLICATE_TICKET";
+    private static final String EMAIL_ALREADY_EXISTS = "EMAIL_ALREADY_EXISTS";
     private static final String DATA_INTEGRITY_VIOLATION = "DATA_INTEGRITY_VIOLATION";
     private static final String LOCK_ACQUISITION_FAILURE = "LOCK_ACQUISITION_FAILURE";
+    private static final String AUTHENTICATION_FAILED = "AUTHENTICATION_FAILED";
+    private static final String ACCESS_DENIED = "ACCESS_DENIED";
     private static final String INTERNAL_ERROR = "INTERNAL_ERROR";
 
     @ExceptionHandler(ResourceNotFoundException.class)
@@ -41,6 +46,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DuplicateTicketException.class)
     public ResponseEntity<ErrorResponse> handleDuplicateTicket(DuplicateTicketException ex) {
         ErrorResponse response = ErrorResponse.of(DUPLICATE_TICKET, ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+    }
+
+    @ExceptionHandler(EmailAlreadyExistsException.class)
+    public ResponseEntity<ErrorResponse> handleEmailAlreadyExists(EmailAlreadyExistsException ex) {
+        ErrorResponse response = ErrorResponse.of(EMAIL_ALREADY_EXISTS, ex.getMessage());
         return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
     }
 
@@ -74,6 +85,18 @@ public class GlobalExceptionHandler {
         ErrorResponse response = ErrorResponse.of(LOCK_ACQUISITION_FAILURE,
                 "Could not acquire the lock required to complete the operation");
         return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+    }
+
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<ErrorResponse> handleBadCredentials(BadCredentialsException ex) {
+        ErrorResponse response = ErrorResponse.of(AUTHENTICATION_FAILED, "Invalid email or password");
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException ex) {
+        ErrorResponse response = ErrorResponse.of(ACCESS_DENIED, "You do not have permission to access this resource");
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
     }
 
     @ExceptionHandler(Exception.class)

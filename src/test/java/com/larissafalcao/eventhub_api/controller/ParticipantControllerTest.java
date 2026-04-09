@@ -3,13 +3,16 @@ package com.larissafalcao.eventhub_api.controller;
 import com.larissafalcao.eventhub_api.dto.request.CreateParticipantRequest;
 import com.larissafalcao.eventhub_api.dto.response.ParticipantResponse;
 import com.larissafalcao.eventhub_api.exception.GlobalExceptionHandler;
+import com.larissafalcao.eventhub_api.security.JwtService;
 import com.larissafalcao.eventhub_api.service.ParticipantService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -22,6 +25,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(ParticipantController.class)
+@AutoConfigureMockMvc(addFilters = false)
 @Import(GlobalExceptionHandler.class)
 class ParticipantControllerTest {
 
@@ -30,6 +34,12 @@ class ParticipantControllerTest {
 
     @MockitoBean
     private ParticipantService participantService;
+
+    @MockitoBean
+    private JwtService jwtService;
+
+    @MockitoBean
+    private UserDetailsService userDetailsService;
 
     @Test
     @DisplayName("returns 201 when valid request")

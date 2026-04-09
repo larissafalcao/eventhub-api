@@ -1,10 +1,11 @@
 package com.larissafalcao.eventhub_api.service;
 
-import com.larissafalcao.eventhub_api.dto.request.PurchaseTicketRequest;
 import com.larissafalcao.eventhub_api.dto.response.TicketResponse;
 import com.larissafalcao.eventhub_api.entity.Event;
 import com.larissafalcao.eventhub_api.entity.Participant;
+import com.larissafalcao.eventhub_api.entity.Role;
 import com.larissafalcao.eventhub_api.entity.Ticket;
+import com.larissafalcao.eventhub_api.entity.User;
 import com.larissafalcao.eventhub_api.event.TicketPurchasedEvent;
 import com.larissafalcao.eventhub_api.exception.DuplicateTicketException;
 import com.larissafalcao.eventhub_api.exception.EventFullException;
@@ -64,9 +65,6 @@ class TicketServiceTest {
         Long participantId = 10L;
         Event event = createEvent(eventId, 100);
         Participant participant = createParticipant(participantId, "Alice", "alice@email.com");
-        PurchaseTicketRequest request = PurchaseTicketRequest.builder()
-                .participantId(participantId)
-                .build();
 
         when(eventRepository.findByIdForUpdate(eventId)).thenReturn(Optional.of(event));
         when(participantRepository.findById(participantId)).thenReturn(Optional.of(participant));
@@ -81,7 +79,7 @@ class TicketServiceTest {
                     .build();
         });
 
-        TicketResponse response = ticketService.purchaseTicket(eventId, request);
+        TicketResponse response = ticketService.purchaseTicket(eventId, participantId);
 
         assertThat(response.getId()).isEqualTo(123L);
         assertThat(response.getEventId()).isEqualTo(eventId);
@@ -98,13 +96,11 @@ class TicketServiceTest {
     void purchaseTicketThrowsEventFullBeforeParticipantLookup() {
         Long eventId = 1L;
         Event event = createEvent(eventId, 0);
-        PurchaseTicketRequest request = PurchaseTicketRequest.builder()
-                .participantId(10L)
-                .build();
+        Long participantId = 10L;
 
         when(eventRepository.findByIdForUpdate(eventId)).thenReturn(Optional.of(event));
 
-        assertThatThrownBy(() -> ticketService.purchaseTicket(eventId, request))
+        assertThatThrownBy(() -> ticketService.purchaseTicket(eventId, participantId))
                 .isInstanceOf(EventFullException.class)
                 .hasMessage("Event with id 1 is full");
 
@@ -117,12 +113,10 @@ class TicketServiceTest {
     @DisplayName("purchaseTicket: throws ResourceNotFoundException when event does not exist")
     void purchaseTicketThrowsWhenEventDoesNotExist() {
         Long eventId = 999L;
-        PurchaseTicketRequest request = PurchaseTicketRequest.builder()
-                .participantId(1L)
-                .build();
+        Long participantId = 1L;
         when(eventRepository.findByIdForUpdate(eventId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> ticketService.purchaseTicket(eventId, request))
+        assertThatThrownBy(() -> ticketService.purchaseTicket(eventId, participantId))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage("Event not found with id: 999");
 
@@ -136,14 +130,11 @@ class TicketServiceTest {
         Long eventId = 1L;
         Long participantId = 999L;
         Event event = createEvent(eventId, 100);
-        PurchaseTicketRequest request = PurchaseTicketRequest.builder()
-                .participantId(participantId)
-                .build();
 
         when(eventRepository.findByIdForUpdate(eventId)).thenReturn(Optional.of(event));
         when(participantRepository.findById(participantId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> ticketService.purchaseTicket(eventId, request))
+        assertThatThrownBy(() -> ticketService.purchaseTicket(eventId, participantId))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage("Participant not found with id: 999");
 
@@ -158,15 +149,12 @@ class TicketServiceTest {
         Long participantId = 10L;
         Event event = createEvent(eventId, 100);
         Participant participant = createParticipant(participantId, "Alice", "alice@email.com");
-        PurchaseTicketRequest request = PurchaseTicketRequest.builder()
-                .participantId(participantId)
-                .build();
 
         when(eventRepository.findByIdForUpdate(eventId)).thenReturn(Optional.of(event));
         when(participantRepository.findById(participantId)).thenReturn(Optional.of(participant));
         when(ticketRepository.existsByEventIdAndParticipantId(eventId, participantId)).thenReturn(true);
 
-        assertThatThrownBy(() -> ticketService.purchaseTicket(eventId, request))
+        assertThatThrownBy(() -> ticketService.purchaseTicket(eventId, participantId))
                 .isInstanceOf(DuplicateTicketException.class)
                 .hasMessage("Participant 10 already has a ticket for event 1");
 
@@ -175,10 +163,11 @@ class TicketServiceTest {
     }
 
     @Test
-    @DisplayName("listTicketsByParticipant: returns tickets ordered by purchase date")
-    void listTicketsByParticipantReturnsTickets() {
+    @DisplayName("listTicketsByAuthenticatedUser: returns tickets ordered by purchase date")
+    void listTicketsByAuthenticatedUserReturnsTickets() {
         Long participantId = 10L;
         Participant participant = createParticipant(participantId, "Alice", "alice@email.com");
+        User authenticatedUser = createUser(participant);
         Event event = createEvent(1L, 100);
         Ticket ticket = Ticket.builder()
                 .id(50L)
@@ -187,27 +176,15 @@ class TicketServiceTest {
                 .purchasedAt(Instant.parse("2026-02-16T12:00:00Z"))
                 .build();
 
-        when(participantRepository.findById(participantId)).thenReturn(Optional.of(participant));
         when(ticketRepository.findByParticipantIdOrderByPurchasedAtDesc(participantId))
                 .thenReturn(List.of(ticket));
 
-        List<TicketResponse> result = ticketService.listTicketsByParticipant(participantId);
+        List<TicketResponse> result = ticketService.listTicketsByAuthenticatedUser(authenticatedUser);
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getId()).isEqualTo(50L);
         assertThat(result.get(0).getEventId()).isEqualTo(1L);
         assertThat(result.get(0).getParticipantId()).isEqualTo(participantId);
-    }
-
-    @Test
-    @DisplayName("listTicketsByParticipant: throws ResourceNotFoundException when participant not found")
-    void listTicketsByParticipantThrowsWhenNotFound() {
-        Long participantId = 999L;
-        when(participantRepository.findById(participantId)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> ticketService.listTicketsByParticipant(participantId))
-                .isInstanceOf(ResourceNotFoundException.class)
-                .hasMessage("Participant not found with id: 999");
     }
 
     private static Event createEvent(Long id, Integer capacity) {
@@ -225,6 +202,17 @@ class TicketServiceTest {
                 .id(id)
                 .name(name)
                 .email(email)
+                .build();
+    }
+
+    private static User createUser(Participant participant) {
+        return User.builder()
+                .id(1L)
+                .name(participant.getName())
+                .email(participant.getEmail())
+                .password("encoded-password")
+                .role(Role.USER)
+                .participant(participant)
                 .build();
     }
 }

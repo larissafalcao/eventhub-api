@@ -1,10 +1,10 @@
 package com.larissafalcao.eventhub_api.service;
 
-import com.larissafalcao.eventhub_api.dto.request.PurchaseTicketRequest;
 import com.larissafalcao.eventhub_api.dto.response.TicketResponse;
 import com.larissafalcao.eventhub_api.entity.Event;
 import com.larissafalcao.eventhub_api.entity.Participant;
 import com.larissafalcao.eventhub_api.entity.Ticket;
+import com.larissafalcao.eventhub_api.entity.User;
 import com.larissafalcao.eventhub_api.event.TicketPurchasedEvent;
 import com.larissafalcao.eventhub_api.exception.DuplicateTicketException;
 import com.larissafalcao.eventhub_api.exception.EventFullException;
@@ -46,14 +46,14 @@ public class TicketService {
     }
 
     @Transactional
-    public TicketResponse purchaseTicket(Long eventId, PurchaseTicketRequest request) {
+    public TicketResponse purchaseTicket(Long eventId, Long participantId) {
         Event event = findEventByIdForUpdate(eventId);
 
         if (event.getCapacity() <= 0) {
             throw new EventFullException(eventId);
         }
 
-        Participant participant = findParticipantById(request.getParticipantId());
+        Participant participant = findParticipantById(participantId);
 
         if (ticketRepository.existsByEventIdAndParticipantId(eventId, participant.getId())) {
             throw new DuplicateTicketException(eventId, participant.getId());
@@ -77,10 +77,14 @@ public class TicketService {
         return ticketMapper.toResponse(savedTicket);
     }
 
-    @Transactional(readOnly = true)
-    public List<TicketResponse> listTicketsByParticipant(Long participantId) {
-        Participant participant = findParticipantById(participantId);
-        return ticketRepository.findByParticipantIdOrderByPurchasedAtDesc(participant.getId()).stream()
+    @Transactional
+    public TicketResponse purchaseTicket(Long eventId, User authenticatedUser) {
+        return purchaseTicket(eventId, authenticatedUser.getParticipant().getId());
+    }
+
+    public List<TicketResponse> listTicketsByAuthenticatedUser(User authenticatedUser) {
+        Long participantId = authenticatedUser.getParticipant().getId();
+        return ticketRepository.findByParticipantIdOrderByPurchasedAtDesc(participantId).stream()
                 .map(ticketMapper::toResponse)
                 .toList();
     }

@@ -5,10 +5,12 @@ import com.larissafalcao.eventhub_api.dto.request.UpdateEventRequest;
 import com.larissafalcao.eventhub_api.dto.response.EventResponse;
 import com.larissafalcao.eventhub_api.exception.GlobalExceptionHandler;
 import com.larissafalcao.eventhub_api.exception.ResourceNotFoundException;
+import com.larissafalcao.eventhub_api.security.JwtService;
 import com.larissafalcao.eventhub_api.service.EventService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
@@ -16,6 +18,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
@@ -36,6 +39,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(EventController.class)
+@AutoConfigureMockMvc(addFilters = false)
 @Import(GlobalExceptionHandler.class)
 class EventControllerTest {
 
@@ -44,6 +48,12 @@ class EventControllerTest {
 
     @MockitoBean
     private EventService eventService;
+
+    @MockitoBean
+    private JwtService jwtService;
+
+    @MockitoBean
+    private UserDetailsService userDetailsService;
 
     private static final LocalDate FUTURE_DATE = LocalDate.now().plusDays(7);
 

@@ -4,6 +4,7 @@ import com.larissafalcao.eventhub_api.config.CacheConfig;
 import com.larissafalcao.eventhub_api.dto.request.CreateEventRequest;
 import com.larissafalcao.eventhub_api.dto.request.UpdateEventRequest;
 import com.larissafalcao.eventhub_api.dto.response.EventResponse;
+import com.larissafalcao.eventhub_api.dto.response.RestPage;
 import com.larissafalcao.eventhub_api.entity.Event;
 import com.larissafalcao.eventhub_api.exception.ResourceNotFoundException;
 import com.larissafalcao.eventhub_api.mapper.EventMapper;
@@ -40,9 +41,9 @@ public class EventService {
             cacheNames = CacheConfig.EVENTS_CACHE_NAME,
             key = "#pageable.pageNumber + '-' + #pageable.pageSize + '-' + #pageable.sort.toString()")
     @Transactional(readOnly = true)
-    public Page<EventResponse> listEvents(Pageable pageable) {
-        return eventRepository.findAll(pageable)
-                .map(eventMapper::toResponse);
+    public RestPage<EventResponse> listEvents(Pageable pageable) {
+        Page<EventResponse> page = eventRepository.findAll(pageable).map(eventMapper::toResponse);
+        return new RestPage<>(page.getContent(), page.getNumber(), page.getSize(), page.getTotalElements());
     }
 
     @Transactional(readOnly = true)

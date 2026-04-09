@@ -15,6 +15,8 @@ spring:
     cache-names: ${CACHE_NAMES:events}
     redis:
       time-to-live: ${CACHE_TTL:10m}
+  jpa:
+    open-in-view: false
   lifecycle:
     timeout-per-shutdown-phase: ${SHUTDOWN_TIMEOUT_PER_PHASE:30s}
 
@@ -26,8 +28,15 @@ logging:
     root: ${LOG_LEVEL_ROOT:INFO}
   structured:
     format:
-      console: ${LOG_CONSOLE_FORMAT:logstash}
+      console: ${LOG_CONSOLE_FORMAT:}
 
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
+    enabled: ${SPRINGDOC_ENABLED:true}
+  api-docs:
+    enabled: ${SPRINGDOC_ENABLED:true}
+
+jwt:
+  secret: ${JWT_SECRET:default-dev-secret-key-min-256-bits-long-for-hmac-sha}
+  expiration: ${JWT_EXPIRATION:86400000}

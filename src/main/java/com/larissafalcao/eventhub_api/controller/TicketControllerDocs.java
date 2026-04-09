@@ -1,7 +1,7 @@
 package com.larissafalcao.eventhub_api.controller;
 
-import com.larissafalcao.eventhub_api.dto.request.PurchaseTicketRequest;
 import com.larissafalcao.eventhub_api.dto.response.TicketResponse;
+import com.larissafalcao.eventhub_api.entity.User;
 import com.larissafalcao.eventhub_api.exception.ErrorResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 import java.util.List;
 
@@ -26,15 +27,22 @@ public interface TicketControllerDocs {
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     @ApiResponse(responseCode = "409", description = "Event capacity reached or duplicate ticket",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    @ApiResponse(responseCode = "401", description = "Authentication required",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    @ApiResponse(responseCode = "403", description = "Access denied",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     ResponseEntity<TicketResponse> purchaseTicket(
             @Parameter(description = "Event id", example = "1") Long eventId,
-            PurchaseTicketRequest request);
+            @AuthenticationPrincipal User authenticatedUser);
 
-    @Operation(summary = "List participant tickets", description = "Returns all tickets from a participant")
+    @Operation(summary = "List authenticated user tickets", description = "Returns all tickets from the authenticated user")
     @ApiResponse(responseCode = "200", description = "Tickets returned successfully",
             content = @Content(array = @ArraySchema(schema = @Schema(implementation = TicketResponse.class))))
     @ApiResponse(responseCode = "404", description = "Participant not found",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
-    ResponseEntity<List<TicketResponse>> listTicketsByParticipant(
-            @Parameter(description = "Participant id", example = "1") Long participantId);
+    @ApiResponse(responseCode = "401", description = "Authentication required",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    @ApiResponse(responseCode = "403", description = "Access denied",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    ResponseEntity<List<TicketResponse>> listMyTickets(@AuthenticationPrincipal User authenticatedUser);
 }
