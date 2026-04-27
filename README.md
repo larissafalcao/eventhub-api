@@ -1,8 +1,8 @@
 # Event Hub API
 
-API REST para gerenciamento de eventos, participantes e compra de ingressos.
+REST API for managing events, participants, and ticket purchases.
 
-## Tecnologias
+## Technologies
 
 - Java 21
 - Spring Boot 4
@@ -19,33 +19,33 @@ API REST para gerenciamento de eventos, participantes e compra de ingressos.
 - Docker
 - Docker Compose
 
-## Como rodar o projeto
+## How to run the project
 
-### 1) Pre-requisitos
+### 1) Prerequisites
 
-- Java 21 instalado
+- Java 21 installed
 - Maven 3.9+
-- Docker e Docker Compose
+- Docker and Docker Compose
 
-### 2) Subir toda a stack com Docker
+### 2) Start the full stack with Docker
 
-No diretório raiz do projeto:
+In the project root directory:
 
-1. Crie seu arquivo de ambiente a partir do exemplo:
+1. Create your environment file from the example:
 
 ```bash
 cp .env.example .env
 ```
 
-2. Preencha as credenciais no arquivo `.env`
+2. Fill in the credentials in the `.env` file
 
-3. Suba os containers:
+3. Start the containers:
 
 ```bash
 docker compose up --build
 ```
 
-Isso sobe:
+This will start:
 
 - API: `http://localhost:8080`
 - Swagger UI: `http://localhost:8080/swagger-ui.html`
@@ -53,51 +53,51 @@ Isso sobe:
 - PostgreSQL: `localhost:15432`
 - Redis: `localhost:6379`
 
-### 3) Rodar a aplicação localmente
+### 3) Run the application locally
 
-Se preferir rodar a API fora do Docker, suba primeiro as dependências:
+If you prefer to run the API outside of Docker, start the dependencies first:
 
 ```bash
 docker compose up -d postgres-eventhub redis-eventhub
 ```
 
-Depois exporte as variáveis de ambiente necessárias e execute a aplicação com Maven:
+Then export the required environment variables and run the application with Maven:
 
 ```bash
-export DB_URL=jdbc:postgresql://localhost:15432/seu-banco
-export POSTGRES_USER=seu-usuario
-export POSTGRES_PASSWORD=sua-senha
+export DB_URL=jdbc:postgresql://localhost:15432/your-database
+export POSTGRES_USER=your-username
+export POSTGRES_PASSWORD=your-password
 ```
 
 ```bash
 mvn spring-boot:run
 ```
 
-Ou, se preferir reaproveitar as credenciais do `.env`:
+Or, if you prefer to reuse the credentials from `.env`:
 
 ```bash
-export POSTGRES_DB=seu-banco
-export POSTGRES_USER=seu-usuario
-export POSTGRES_PASSWORD=sua-senha
+export POSTGRES_DB=your-database
+export POSTGRES_USER=your-username
+export POSTGRES_PASSWORD=your-password
 export DB_URL=jdbc:postgresql://localhost:15432/${POSTGRES_DB}
 mvn spring-boot:run
 ```
 
-A aplicação sobe, por padrão, em:
+The application starts at:
 
 - API: `http://localhost:8080`
 - Swagger UI: `http://localhost:8080/swagger-ui.html`
 - OpenAPI JSON: `http://localhost:8080/v3/api-docs`
 
-### 4) Variáveis de ambiente
+### 4) Environment variables
 
-Credenciais e parâmetros sensíveis não ficam hardcoded no projeto. Para rodar com Docker Compose, defina pelo menos:
+Credentials and sensitive parameters are not hardcoded in the project. To run with Docker Compose, define at least:
 
 - `POSTGRES_DB`
 - `POSTGRES_USER`
 - `POSTGRES_PASSWORD`
 
-Variáveis suportadas:
+Supported variables:
 
 - `DB_URL` (default: `jdbc:postgresql://localhost:15432/eventhub-api-db`)
 - `DB_DRIVER_CLASS_NAME` (default: `org.postgresql.Driver`)
@@ -114,62 +114,62 @@ Variáveis suportadas:
 - `LOG_CONSOLE_FORMAT` (default: `logstash`)
 - `SHUTDOWN_TIMEOUT_PER_PHASE` (default: `30s`)
 
-### 5) Cache de eventos
+### 5) Event cache
 
-A listagem de eventos (`GET /events`) utiliza cache Redis.
+The event listing endpoint (`GET /events`) uses Redis cache.
 
-- Cache configurado: `events`
-- TTL padrão: `10m`
-- Invalidação automática em criação, atualização e remoção de eventos
+- Configured cache: `events`
+- Default TTL: `10m`
+- Automatic invalidation on event creation, update, and deletion
 
-## Como rodar os testes
+## How to run the tests
 
 ```bash
 mvn test
 ```
 
-## Decisões técnicas
+## Technical decisions
 
-### 1) PostgreSQL como banco relacional
+### 1) PostgreSQL as relational database
 
-O domínio envolve entidades relacionais com integridade forte (`events`, `participants`, `tickets`) e regras de consistencia, como:
+The domain involves relational entities with strong integrity (`events`, `participants`, `tickets`) and consistency rules such as:
 
-- chave estrangeira entre ingressos, eventos e participantes;
-- restrição de unicidade para e-mail de participante;
-- indices para consultas por evento e participante.
+- foreign keys between tickets, events, and participants;
+- uniqueness constraint on participant email;
+- indexes for queries by event and participant.
 
-PostgreSQL foi escolhido pela robustez, suporte a constraints e bom desempenho para esse tipo de modelo.
+PostgreSQL was chosen for its robustness, constraint support, and good performance for this type of data model.
 
-### 2) Redis para cache da listagem de eventos
+### 2) Redis for event listing cache
 
-Redis foi adotado para a listagem de eventos porque:
+Redis was adopted for the event listing because:
 
-- reduz leituras repetidas no banco em consultas paginadas;
-- funciona bem em ambiente containerizado;
-- permite TTL configurável e invalidação simples do cache.
+- it reduces repeated database reads on paginated queries;
+- it works well in a containerized environment;
+- it allows configurable TTL and simple cache invalidation.
 
-### 3) Flyway para versionamento de schema
+### 3) Flyway for schema versioning
 
-As mudanças de banco são aplicadas por migrações versionadas, garantindo:
+Database changes are applied through versioned migrations, ensuring:
 
-- rastreabilidade de alterações;
-- inicialização automática do schema ao subir a aplicação.
+- traceability of changes;
+- automatic schema initialization when the application starts.
 
 ### 4) Spring Data JPA
 
-Foi adotado para reduzir boilerplate no acesso ao banco e acelerar implementação de operações CRUD, mantendo o código de persistência simples e consistente com o ecossistema Spring.
+Adopted to reduce boilerplate in database access and speed up CRUD operation implementation, keeping the persistence code simple and consistent with the Spring ecosystem.
 
 ### 5) Jakarta Bean Validation
 
-As validações de entrada são declarativas nos DTOs e executadas automaticamente nos endpoints com `@Valid`, garantindo:
+Input validations are declarative in DTOs and automatically executed at endpoints with `@Valid`, ensuring:
 
-- erro rápido para payload inválido;
-- regras centralizadas e reutilizáveis;
-- respostas de erro padronizadas.
+- fast failure for invalid payloads;
+- centralized and reusable rules;
+- standardized error responses.
 
-### 6) Swagger/OpenAPI com Springdoc
+### 6) Swagger/OpenAPI with Springdoc
 
-A documentação da API foi integrada via Springdoc para:
+API documentation was integrated via Springdoc to:
 
-- facilitar exploração e testes manuais dos endpoints;
-- expor contrato OpenAPI para integrações;
+- facilitate exploration and manual testing of endpoints;
+- expose an OpenAPI contract for integrations;
